@@ -3,229 +3,126 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>React Router & Forms Assessment</title>
-
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/react-router-dom@6/umd/react-router-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+<title>Advanced Student Management System</title>
 <style>
-body{
-    font-family: Arial, sans-serif;
-    background:#f4f4f4;
-    margin:0;
-}
-
-.container{
-    max-width:700px;
-    margin:40px auto;
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    box-shadow:0 0 10px rgba(0,0,0,0.2);
-}
-
-nav{
-    background:#007bff;
-    padding:15px;
-}
-
-nav a{
-    color:white;
-    text-decoration:none;
-    margin-right:15px;
-    font-weight:bold;
-}
-
-input{
-    width:100%;
-    padding:10px;
-    margin-top:5px;
-    margin-bottom:10px;
-    border:1px solid #ccc;
-    border-radius:5px;
-}
-
-button{
-    background:#007bff;
-    color:white;
-    border:none;
-    padding:10px 20px;
-    border-radius:5px;
-    cursor:pointer;
-}
-
-button:hover{
-    background:#0056b3;
-}
-
-.error{
-    color:red;
-    font-size:14px;
-}
+body{font-family:Arial;margin:0;background:#f4f4f4}
+header{background:#2563eb;color:white;padding:15px;text-align:center}
+.container{max-width:1100px;margin:auto;padding:20px}
+.card{background:white;padding:15px;border-radius:10px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+input,select{padding:10px;margin:5px;width:calc(50% - 20px)}
+button{padding:10px 15px;cursor:pointer}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;padding:8px}
+th{background:#e5e7eb}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{flex:1;background:white;padding:15px;border-radius:10px;text-align:center}
 </style>
 </head>
-
 <body>
+<header><h1>Advanced Student Management System</h1></header>
 
-<div id="root"></div>
+<div class="container">
 
-<script type="text/babel">
+<div class="stats">
+<div class="stat"><h2 id="totalStudents">0</h2><p>Total Students</p></div>
+<div class="stat"><h2 id="totalCourses">0</h2><p>Total Courses</p></div>
+</div>
 
-const {
- BrowserRouter,
- Routes,
- Route,
- Link,
- useNavigate,
- useParams
-} = ReactRouterDOM;
+<div class="card">
+<h2>Add Student</h2>
+<input id="name" placeholder="Name">
+<input id="email" placeholder="Email">
+<input id="phone" placeholder="Phone">
+<input id="course" placeholder="Course">
+<br>
+<button onclick="addStudent()">Add Student</button>
+</div>
 
-function Home() {
- return (
-  <div className="container">
-   <h1>React Router & Forms Project</h1>
-   <p>Student Registration System</p>
+<div class="card">
+<h2>Search</h2>
+<input id="search" placeholder="Search by name" onkeyup="renderTable()">
+</div>
 
-   <Link to="/register">
-    <button>Register Student</button>
-   </Link>
-  </div>
- );
+<div class="card">
+<h2>Students</h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Phone</th>
+<th>Course</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="studentTable"></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+let students = JSON.parse(localStorage.getItem('students')||'[]');
+
+function save(){
+ localStorage.setItem('students',JSON.stringify(students));
 }
 
-function Register() {
+function updateStats(){
+ document.getElementById('totalStudents').innerText=students.length;
+ const courses=[...new Set(students.map(s=>s.course))];
+ document.getElementById('totalCourses').innerText=courses.length;
+}
 
- const navigate = useNavigate();
+function addStudent(){
+ const name=document.getElementById('name').value;
+ const email=document.getElementById('email').value;
+ const phone=document.getElementById('phone').value;
+ const course=document.getElementById('course').value;
 
- const [formData,setFormData] = React.useState({
-  name:"",
-  email:"",
-  course:""
+ if(!name||!email||!phone||!course){
+   alert('Fill all fields');
+   return;
+ }
+
+ students.push({name,email,phone,course});
+ save();
+ renderTable();
+
+ document.getElementById('name').value='';
+ document.getElementById('email').value='';
+ document.getElementById('phone').value='';
+ document.getElementById('course').value='';
+}
+
+function deleteStudent(i){
+ students.splice(i,1);
+ save();
+ renderTable();
+}
+
+function renderTable(){
+ const q=document.getElementById('search').value.toLowerCase();
+ const tbody=document.getElementById('studentTable');
+ tbody.innerHTML='';
+
+ students.forEach((s,i)=>{
+   if(s.name.toLowerCase().includes(q)){
+      tbody.innerHTML += `
+      <tr>
+      <td>${s.name}</td>
+      <td>${s.email}</td>
+      <td>${s.phone}</td>
+      <td>${s.course}</td>
+      <td><button onclick="deleteStudent(${i})">Delete</button></td>
+      </tr>`;
+   }
  });
-
- const [errors,setErrors] = React.useState({});
-
- const handleChange=(e)=>{
-  setFormData({
-   ...formData,
-   [e.target.name]:e.target.value
-  });
- };
-
- const validate=()=>{
-
-  let temp={};
-
-  if(!formData.name.trim())
-   temp.name="Name is required";
-
-  if(!formData.email.includes("@"))
-   temp.email="Enter valid email";
-
-  if(!formData.course.trim())
-   temp.course="Course is required";
-
-  setErrors(temp);
-
-  return Object.keys(temp).length===0;
- };
-
- const handleSubmit=(e)=>{
-  e.preventDefault();
-
-  if(validate()){
-   navigate(`/student/${formData.name}`);
-  }
- };
-
- return(
-  <div className="container">
-
-   <h2>Student Registration Form</h2>
-
-   <form onSubmit={handleSubmit}>
-
-    <label>Name</label>
-    <input
-      type="text"
-      name="name"
-      value={formData.name}
-      onChange={handleChange}
-    />
-    <div className="error">{errors.name}</div>
-
-    <label>Email</label>
-    <input
-      type="email"
-      name="email"
-      value={formData.email}
-      onChange={handleChange}
-    />
-    <div className="error">{errors.email}</div>
-
-    <label>Course</label>
-    <input
-      type="text"
-      name="course"
-      value={formData.course}
-      onChange={handleChange}
-    />
-    <div className="error">{errors.course}</div>
-
-    <button type="submit">Submit</button>
-
-   </form>
-
-  </div>
- );
+ updateStats();
 }
 
-function StudentProfile(){
-
- const {name}=useParams();
-
- return(
-  <div className="container">
-
-   <h1>Student Profile</h1>
-
-   <h2>Welcome, {name}</h2>
-
-   <p>Registration Successful!</p>
-
-   <Link to="/">
-    <button>Home</button>
-   </Link>
-
-  </div>
- );
-}
-
-function App(){
-
- return(
-  <BrowserRouter>
-
-   <nav>
-    <Link to="/">Home</Link>
-    <Link to="/register">Register</Link>
-   </nav>
-
-   <Routes>
-    <Route path="/" element={<Home/>}/>
-    <Route path="/register" element={<Register/>}/>
-    <Route path="/student/:name" element={<StudentProfile/>}/>
-   </Routes>
-
-  </BrowserRouter>
- );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-
+renderTable();
 </script>
-
 </body>
 </html>
+
